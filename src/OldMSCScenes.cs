@@ -16,15 +16,19 @@ using System.Linq;
 
 namespace OldMSCScenes;
 
-[BepInPlugin("com.author.testmod", "Test Mod", "0.1.0")]
+[BepInPlugin("bro.retroillustrations", "Retro Region Illustrations", "1.0.0")]
 sealed class OldMSCScenes : BaseUnityPlugin
 {
-    bool init;
-
     public void OnEnable()
     {
         // Add hooks here
         On.RainWorld.OnModsInit += OnModsInit;
+
+        On.Menu.MenuScene.BuildHRLandscapeScene += MenuScene_BuildOldLandscapeScene;
+        On.Menu.MenuScene.BuildLCLandscapeScene += MenuScene_BuildOldLandscapeScene;
+        On.Menu.MenuScene.BuildLMLandscapeScene += MenuScene_BuildOldLandscapeScene;
+        On.Menu.MenuScene.BuildMSLandscapeScene += MenuScene_BuildOldLandscapeScene;
+        On.Menu.MenuScene.BuildDMLandscapeScene += MenuScene_BuildOldLandscapeScene;
     }
 
     private void OnModsInit(On.RainWorld.orig_OnModsInit orig, RainWorld self)
@@ -37,19 +41,8 @@ sealed class OldMSCScenes : BaseUnityPlugin
             global::MachineConnector.SetRegisteredOI(MOD_ID, Options.instance);
 
             SafariIconToggle();
-
-            if (init) return;
-
-            init = true;
-
-            On.Menu.MenuScene.BuildHRLandscapeScene += MenuScene_BuildOldLandscapeScene;
-            On.Menu.MenuScene.BuildLCLandscapeScene += MenuScene_BuildOldLandscapeScene;
-            On.Menu.MenuScene.BuildLMLandscapeScene += MenuScene_BuildOldLandscapeScene;
-            On.Menu.MenuScene.BuildMSLandscapeScene += MenuScene_BuildOldLandscapeScene;
-            On.Menu.MenuScene.BuildDMLandscapeScene += MenuScene_BuildOldLandscapeScene;
-
         }
-        catch (Exception e) { throw e; }
+        catch (Exception e) { Logger.LogError(e); }
     }
     #region buildscene
     private void MenuScene_BuildOldLandscapeScene<T, U>(T orig, U self) 
@@ -60,7 +53,7 @@ sealed class OldMSCScenes : BaseUnityPlugin
 
         if (id.Length == 2)
         {
-            if (regionCheck(id[1]))
+            if (RegionCheck(id[1]))
             {
                 BuildCustomScene2(self, $"OLDLandscape - {id[1]}");
                 return;
@@ -69,7 +62,7 @@ sealed class OldMSCScenes : BaseUnityPlugin
         orig.DynamicInvoke(self);
     }
 
-    public static bool regionCheck(string region)
+    public static bool RegionCheck(string region)
     {
         foreach (Configurable<bool> check in Options.configurables)
         {
@@ -194,17 +187,18 @@ sealed class OldMSCScenes : BaseUnityPlugin
 
                         string region = fileName[1];
 
-                        bool active = regionCheck(region);
+                        bool active = RegionCheck(region);
 
                         if (active && fileName.ToString() != $"Safari_{region}")
-                        { System.IO.File.Move(path, Path.Combine(direct, $"Safari_{region}.png")); }
+                        { File.Move(path, Path.Combine(direct, $"Safari_{region}.png")); }
 
                         else if (!active && fileName.ToString() != $"Safari_{region}_unused")
-                        { System.IO.File.Move(path, Path.Combine(direct, $"Safari_{region}_unused.png")); }
+                        { File.Move(path, Path.Combine(direct, $"Safari_{region}_unused.png")); }
                     }
                 }
             }
-        }catch (Exception e) { throw e; }
+        }
+        catch (Exception e) { Debug.LogException(e); }
     }
 
     #endregion buildscene
@@ -212,7 +206,7 @@ sealed class OldMSCScenes : BaseUnityPlugin
     public static readonly string MOD_ID = "bro.retroillustrations";
 
 
-    public static Dictionary<string, string> regionnames = new Dictionary<string, string>()
+    public static Dictionary<string, string> regionnames = new()
     {
         { "LC", "Metropolis" },
         { "LM", "Waterfront Facility" },
